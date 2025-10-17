@@ -59,7 +59,8 @@ class SellerPropertiesPage extends StatelessWidget {
                       final String subtitle = _composeSubtitle(data);
 
                       final String priceStr = _stringOrEmpty(data['price']);
-                      final String imageUrl = _extractFirstImageUrl(data['image']);
+                      final List<String> imageUrls = _extractImageUrls(data['image']);
+                      final String imageUrl = imageUrls.isNotEmpty ? imageUrls.first : '';
 
                       return Container(
                         decoration: BoxDecoration(
@@ -74,86 +75,97 @@ class SellerPropertiesPage extends StatelessWidget {
                             ),
                           ],
                         ),
-                        child: ListTile(
-                          leading: ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: imageUrl.isEmpty
-                                ? Container(
-                                    width: 44,
-                                    height: 44,
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue.withOpacity(0.1),
-                                    ),
-                                    child: const Icon(
-                                      Icons.home_outlined,
-                                      color: Colors.blue,
-                                    ),
-                                  )
-                                : Image.network(
-                                    imageUrl,
-                                    width: 44,
-                                    height: 44,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Container(
-                                        width: 44,
-                                        height: 44,
+                        child: Theme(
+                          data: Theme.of(context).copyWith(
+                            dividerColor: Colors.transparent,
+                          ),
+                          child: ExpansionTile(
+                            tilePadding: const EdgeInsets.symmetric(horizontal: 16.0),
+                            childrenPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                            leading: ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: imageUrl.isEmpty
+                                  ? Container(
+                                      width: 44,
+                                      height: 44,
+                                      decoration: BoxDecoration(
                                         color: Colors.blue.withOpacity(0.1),
-                                        child: const Icon(
-                                          Icons.home_outlined,
-                                          color: Colors.blue,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                          ),
-                          title: Text(
-                            title,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF111827),
+                                      ),
+                                      child: const Icon(
+                                        Icons.home_outlined,
+                                        color: Colors.blue,
+                                      ),
+                                    )
+                                  : Image.network(
+                                      imageUrl,
+                                      width: 44,
+                                      height: 44,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Container(
+                                          width: 44,
+                                          height: 44,
+                                          color: Colors.blue.withOpacity(0.1),
+                                          child: const Icon(
+                                            Icons.home_outlined,
+                                            color: Colors.blue,
+                                          ),
+                                        );
+                                      },
+                                    ),
                             ),
-                          ),
-                          subtitle: subtitle.isEmpty
-                              ? null
-                              : Padding(
-                                  padding: const EdgeInsets.only(top: 4.0),
+                            title: Row(
+                              children: [
+                                Expanded(
                                   child: Text(
-                                    subtitle,
+                                    title,
                                     style: const TextStyle(
-                                      fontSize: 13,
-                                      color: Color(0xFF6B7280),
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF111827),
                                     ),
                                   ),
                                 ),
-                          trailing: priceStr.isEmpty
-                              ? const Icon(Icons.chevron_left)
-                              : Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    const Text(
-                                      'السعر',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: Color(0xFF6B7280),
+                                if (priceStr.isNotEmpty)
+                                  Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      const Text(
+                                        'السعر',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Color(0xFF6B7280),
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      priceStr,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w700,
-                                        color: Color(0xFF111827),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        priceStr,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFF111827),
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
+                              ],
+                            ),
+                            children: [
+                              if (imageUrls.isNotEmpty)
+                                _buildImagesRow(imageUrls),
+                              if (subtitle.isNotEmpty) ...[
+                                const SizedBox(height: 12),
+                                Text(
+                                  subtitle,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFF6B7280),
+                                  ),
                                 ),
-                          onTap: () {
-                            // Placeholder: open property details in future
-                          },
+                              ],
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -253,6 +265,52 @@ class SellerPropertiesPage extends StatelessWidget {
       }
     }
     return '';
+  }
+
+  List<String> _extractImageUrls(dynamic value) {
+    final List<String> urls = [];
+    if (value is List) {
+      for (final dynamic v in value) {
+        if (v is String && v.trim().isNotEmpty) {
+          urls.add(v.trim());
+        }
+      }
+    }
+    return urls;
+  }
+
+  Widget _buildImagesRow(List<String> urls) {
+    return SizedBox(
+      height: 100,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: urls.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, i) {
+          final String url = urls[i];
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.network(
+              url,
+              width: 140,
+              height: 100,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  width: 140,
+                  height: 100,
+                  color: Colors.blue.withOpacity(0.1),
+                  child: const Icon(
+                    Icons.broken_image_outlined,
+                    color: Colors.blue,
+                  ),
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
   }
 
   String _formatCreatedAt(dynamic value) {
