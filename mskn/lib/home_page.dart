@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mskn/main.dart';
 import 'package:mskn/seller_profile.dart';
+import 'package:mskn/seller_properties.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -92,6 +94,42 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
+            ),
+            // Seller-only button (visible if rank == 'seller')
+            StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+              stream: FirebaseFirestore.instance
+                  .collection('profile')
+                  .doc(_user!.uid)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const SizedBox.shrink();
+                }
+                if (!snapshot.hasData || !snapshot.data!.exists) {
+                  return const SizedBox.shrink();
+                }
+                final data = snapshot.data!.data();
+                final String? rank = data?['rank'];
+                final bool isSeller = rank == 'seller';
+                if (!isSeller) return const SizedBox.shrink();
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                              builder: (_) => const SellerPropertiesPage()),
+                        );
+                      },
+                      icon: const Icon(Icons.home_work_outlined),
+                      label: const Text('عقاراتي'),
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         ),
